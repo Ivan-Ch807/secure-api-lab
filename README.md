@@ -31,5 +31,4 @@
 | GET | `/employees` | `X-Login`, `X-Password` (тільки `admin`) | — | Отримання списку співробітників | `200 OK`, `401 Unauthorized`, `403 Forbidden` |
 
 ## Посилання на репозиторій
-`https://github.com/Ivan-Ch807/secure-api-lab`
-````
+[https://github.com/Ivan-Ch807/secure-api-lab](https://github.com/Ivan-Ch807/secure-api-lab)
