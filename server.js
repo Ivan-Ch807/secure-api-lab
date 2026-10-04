@@ -1,33 +1,59 @@
 const express = require('express');
-// Імпортуємо наші дані
-const { documents, employees } = require('./data');
+// Імпортуємо всі дані, включаючи користувачів
+const { users, documents, employees } = require('./data');
 
 const app = express();
 const PORT = 3000;
 
-// Middleware для автоматичного парсингу JSON-тіла запиту
-// Це необхідно для роботи POST-запитів
+// Middleware для автоматичного парсингу JSON
 app.use(express.json());
+
+// --- MIDDLEWARE БЕЗПЕКИ ---
+
+// Middleware для аутентифікації (перевірка логіна та пароля)
+const authMiddleware = (req, res, next) => {
+    const login = req.headers['x-login'];
+    const password = req.headers['x-password'];
+
+    const user = users.find(u => u.login === login && u.password === password);
+
+    if (!user) {
+        return res.status(401).json({
+            message: 'Authentication failed. Please provide valid credentials in headers X-Login and X-Password.'
+        });
+    }
+
+    // Додаємо знайденого користувача до об'єкта запиту
+    req.user = user;
+    next();
+};
+
+// Middleware для авторизації (перевірка ролі 'admin')
+const adminOnlyMiddleware = (req, res, next) => {
+    if (!req.user || req.user.role !== 'admin') {
+        return res.status(403).json({
+            message: 'Access denied. Admin role required.'
+        });
+    }
+    next();
+};
 
 // --- МАРШРУТИ ДЛЯ РЕСУРСІВ ---
 
-// Маршрут для отримання списку всіх документів
-app.get('/documents', (req, res) => {
+// Запити до /documents вимагають тільки аутентифікації
+app.get('/documents', authMiddleware, (req, res) => {
     res.status(200).json(documents);
 });
 
-// Маршрут для створення нового документа
-app.post('/documents', (req, res) => {
+app.post('/documents', authMiddleware, (req, res) => {
     const newDocument = req.body;
-    // Імітуємо створення ID
     newDocument.id = Date.now();
     documents.push(newDocument);
-    // Відповідаємо статусом 201 Created та повертаємо створений об'єкт
     res.status(201).json(newDocument);
 });
 
-// Маршрут для отримання списку всіх співробітників
-app.get('/employees', (req, res) => {
+// Запити до /employees вимагають аутентифікації ТА прав адміністратора
+app.get('/employees', authMiddleware, adminOnlyMiddleware, (req, res) => {
     res.status(200).json(employees);
 });
 
